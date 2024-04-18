@@ -1,2 +1,17 @@
 # MakefileTest
-A script to run some preliminary tests on a Makefile to make sure it is functioning correctly. It will start as a way to run every target  in the Makefile and check for any errors, but I would like to make it extendable by adding support for writing files to check for specific outcomes to specific targets.
+Originally a Bash Script that would just run all the targets in a Makefile to see if any failed, this project has evolved into a Go program that will allow for a more modular approach to testing a Makefile.
+
+## Features
+ - A program that can take a Makefile, and runs all the targets.
+ - Takes a json file containing the targets to be run and the desired output/file for each one
+ - JSON Params: 
+      - Name (string)
+      - targetToRun (string)
+      - filesCreated (string)
+      - filesDeleted (string)
+      - searchForFailureInOutput (bool)
+ 
+ Note: More features will probably be added later, this is going to be the basic functionality though.
+
+ ## JSON Format
+ 
