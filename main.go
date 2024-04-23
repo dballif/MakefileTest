@@ -184,10 +184,12 @@ func runTarget(makefile string, target string) bool {
 }
 
 func parseMakefileTargets(makefile string) []TargetConfig {
-	// Setup arrays to catch targets & phonys in
+	// Setup arrays to catch targets, phonys, and rms in
 	finalTargetArray := []TargetConfig{}
 	targetArray := []string{}
 	phonyArray := []string{}
+	rmArray := []string{}
+	rmCmdArray := []string{}
 
 	// Parse the Makefile Section
 	// Open the Makefile
@@ -206,6 +208,9 @@ func parseMakefileTargets(makefile string) []TargetConfig {
 	// Create scanner to read Makefile line by line
 	scanner := bufio.NewScanner(file)
 
+	// Create a variable to fill based on the target the scanner is in
+	var currentTarget string
+
 	// Scan the Makefile
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -214,9 +219,10 @@ func parseMakefileTargets(makefile string) []TargetConfig {
 
 			// If it is not a .PHONY, it means it should correspond ot a file
 			if !strings.Contains(line, ".PHONY:") {
-				// Remove the colon
 				// Get the target
 				target := strings.Split(line, ":")[0]
+				// Set the current Target so we can check the actions for "rm"
+				currentTarget = target
 				targetArray = append(targetArray, target)
 			} else {
 				target := strings.Split(line, ":")[1]
@@ -227,6 +233,10 @@ func parseMakefileTargets(makefile string) []TargetConfig {
 					phonyArray = append(phonyArray, splitTarget[i])
 				}
 			}
+		}
+		if strings.Contains(line, "rm ") {
+			rmArray = append(rmArray, currentTarget)
+			rmCmdArray = append(rmCmdArray, line)
 		}
 	}
 
@@ -240,8 +250,36 @@ func parseMakefileTargets(makefile string) []TargetConfig {
 		newTargetConfig.Target = targetArray[i]
 		newTargetConfig.IgnoreFailure = true
 
-		// FIXME: Add section that looks for rm or some equivalent
+		// Check if it is cleaning
+		// Create a regex for rm
+		rmRe := regexp.MustCompile(`\brm\b`)
+		// Set Base Condition
 		newTargetConfig.FilesDeleted = ""
+
+		// Loop over rm Array
+		for j := 0; j < len(rmArray); j++ {
+			if rmArray[j] == targetArray[i] {
+				// Grab the line at the same index from the rmCmdArray
+				cmdString := strings.Split(rmCmdArray[j], " ")
+
+				// A counter for the number of files to delete in command
+				cmdCount := 0
+				for k := 0; k < len(cmdString); k++ {
+					if cmdString[k][0] != '-' {
+						if !rmRe.MatchString(cmdString[k]) {
+							// Now I just need to add this to a usable list
+							if 0 == cmdCount {
+								newTargetConfig.FilesDeleted += cmdString[k]
+							} else {
+								newTargetConfig.FilesDeleted += "," + cmdString[k]
+							}
+
+						}
+					}
+				}
+			}
+
+		}
 
 		// Check if it is a .PHONY, if it is not, it should correspond to a file
 		isPhony := false
@@ -261,50 +299,6 @@ func parseMakefileTargets(makefile string) []TargetConfig {
 	}
 	fmt.Println(targetArray)
 	fmt.Println(phonyArray)
+	fmt.Println(rmArray)
 	return finalTargetArray
-}
-
-func parseMakefileRm(makefile string) []string {
-	// Setup arrays to catch targets & phonys in
-	rmArray := []string{}
-
-	// Parse the Makefile Section
-	// Open the Makefile
-	file, err := os.Open(makefile)
-	if err != nil {
-		fmt.Println("Opening Makefile Error: ", err)
-		return nil
-	}
-
-	// Make sure to close the file when done
-	defer file.Close()
-
-	// Create regexes
-	regexTargetPattern := regexp.MustCompile(`^\s*([^\s#]+)\s*:`)
-	regexRmPattern := regexp.MustCompile(`^(@?\s*rm\s+)`)
-
-	// Create scanner to read Makefile line by line
-	scanner := bufio.NewScanner(file)
-
-	// Create variable for the target that is being parsed
-	var target string
-
-	// Scan the Makefile
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		//Find target we are working with
-		targetMatch := regexTargetPattern.FindStringSubmatch(line)
-		if len(targetMatch) > 0 {
-			target = targetMatch[1]
-		}
-
-		// Does it match the rm regex
-		matches := regexRmPattern.FindStringSubmatch(line)
-		if len(matches) > 0 {
-			rmArray = append(rmArray, target)
-		}
-	}
-
-	return rmArray
 }
