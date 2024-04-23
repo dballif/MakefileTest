@@ -51,12 +51,19 @@ func main() {
 		fmt.Println("Starting Automatic JSON Generation")
 		targets := parseMakefileTargets(Makefile)
 
-		// Search each target for rm
-		// rmTargets = parseMakefileRm(Makefile)
+		// Wrap the targets in the TestTarget structure to allow proper marshalling
+		var testTargets TestTargets
+		testTargets.TestTargets = append(testTargets.TestTargets, targets...)
 
 		// Create JSON based on the arrays we have collected
+		jsonVar, _ := json.MarshalIndent(testTargets, "", "   ")
+		fmt.Println(string(jsonVar))
 
-		fmt.Println(targets)
+		// Save it to a file
+		err := os.WriteFile(TestJsonFile, jsonVar, 0644)
+		if err != nil {
+			fmt.Println("JSON File writing error")
+		}
 
 		return
 	}
