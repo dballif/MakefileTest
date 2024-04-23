@@ -1,0 +1,25 @@
+{
+   "TestTargets": [
+      {
+         "Name": "target1 Test",
+         "Target": "target1",
+         "FilesCreated": "target1",
+         "FilesDeleted": "",
+         "IgnoreFailure": true
+      },
+      {
+         "Name": "target1Clean Test",
+         "Target": "target1Clean",
+         "FilesCreated": "",
+         "FilesDeleted": "target*",
+         "IgnoreFailure": true
+      },
+      {
+         "Name": "failTarget Test",
+         "Target": "failTarget",
+         "FilesCreated": "",
+         "FilesDeleted": "",
+         "IgnoreFailure": true
+      }
+   ]
+}
