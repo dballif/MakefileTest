@@ -48,7 +48,7 @@ func main() {
 	passColor := "\033[32m"
 
 	if Generation {
-		fmt.Println("Starting Automatic JSON Generation")
+		//fmt.Println("Starting Automatic JSON Generation")
 		targets := parseMakefileTargets(Makefile)
 
 		// Wrap the targets in the TestTarget structure to allow proper marshalling
@@ -57,7 +57,7 @@ func main() {
 
 		// Create JSON based on the arrays we have collected
 		jsonVar, _ := json.MarshalIndent(testTargets, "", "   ")
-		fmt.Println(string(jsonVar))
+		//fmt.Println(string(jsonVar))
 
 		// Save it to a file
 		err := os.WriteFile(TestJsonFile, jsonVar, 0644)
@@ -126,11 +126,6 @@ func main() {
 		fmt.Println(string(failColor) + "# Failed: " + fmt.Sprint(failCount) + string(colorReset))
 	}
 	fmt.Println("--------------------------------------------------")
-}
-
-// Function to read the Makefile and search for targets
-func readMakefile(makefile string) {
-
 }
 
 // Function to parse the JSON tests
@@ -297,8 +292,8 @@ func parseMakefileTargets(makefile string) []TargetConfig {
 		// Add the new target to the array
 		finalTargetArray = append(finalTargetArray, newTargetConfig)
 	}
-	fmt.Println(targetArray)
-	fmt.Println(phonyArray)
-	fmt.Println(rmArray)
+	// fmt.Println(targetArray)
+	// fmt.Println(phonyArray)
+	// fmt.Println(rmArray)
 	return finalTargetArray
 }

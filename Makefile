@@ -1,9 +1,9 @@
 target1:
-	@touch target1test
-	@touch target2test
+	@touch target1
+	@touch target2
 
 target1Clean:
-	@rm -rf target*test
+	@rm -rf target*
 
 failTarget:
 	@echo "FAIL"
