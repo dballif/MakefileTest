@@ -1,23 +1,27 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
 var (
 	TestJsonFile string
 	Makefile     string
+	Generation   bool
 )
 
 func init() {
 	flag.StringVar(&TestJsonFile, "f", "test.json", "JSON file containign test data")
 	flag.StringVar(&Makefile, "m", "Makefile", "Makefile to be tested")
+	flag.BoolVar(&Generation, "g", false, "Automatic JSON Generation")
 	flag.Parse()
 }
 
@@ -42,6 +46,20 @@ func main() {
 	colorReset := "\033[0m"
 	failColor := "\033[31m"
 	passColor := "\033[32m"
+
+	if Generation {
+		fmt.Println("Starting Automatic JSON Generation")
+		targets := parseMakefileTargets(Makefile)
+
+		// Search each target for rm
+		// rmTargets = parseMakefileRm(Makefile)
+
+		// Create JSON based on the arrays we have collected
+
+		fmt.Println(targets)
+
+		return
+	}
 
 	// Parse the JSON file to find targets info
 	targetTestInfo := parseJson(TestJsonFile)
@@ -156,4 +174,130 @@ func runTarget(makefile string, target string) bool {
 
 	// If string contains failure, then return false
 	return !containsFailure
+}
+
+func parseMakefileTargets(makefile string) []TargetConfig {
+	// Setup arrays to catch targets & phonys in
+	finalTargetArray := []TargetConfig{}
+	targetArray := []string{}
+	phonyArray := []string{}
+
+	// Parse the Makefile Section
+	// Open the Makefile
+	file, err := os.Open(makefile)
+	if err != nil {
+		fmt.Println("Opening Makefile Error: ", err)
+		return nil
+	}
+
+	// Make sure to close the file when done
+	defer file.Close()
+
+	// Create regex
+	regexPattern := regexp.MustCompile(`^\s*([^\s#]+)\s*:`)
+
+	// Create scanner to read Makefile line by line
+	scanner := bufio.NewScanner(file)
+
+	// Scan the Makefile
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Does it match the regex
+		if regexPattern.MatchString(line) {
+
+			// If it is not a .PHONY, it means it should correspond ot a file
+			if !strings.Contains(line, ".PHONY:") {
+				// Remove the colon
+				// Get the target
+				target := strings.Split(line, ":")[0]
+				targetArray = append(targetArray, target)
+			} else {
+				target := strings.Split(line, ":")[1]
+				// Split on Spaces
+				splitTarget := strings.Split(target, " ")
+				// Skip the first space which is part of Makefile Standard
+				for i := 1; i < len(splitTarget); i++ {
+					phonyArray = append(phonyArray, splitTarget[i])
+				}
+			}
+		}
+	}
+
+	// Iterate over target array, creating target structures
+	for i := 0; i < len(targetArray); i++ {
+		// Create a new target Structure
+		var newTargetConfig TargetConfig
+
+		// Fill the Structure
+		newTargetConfig.Name = targetArray[i] + " Test"
+		newTargetConfig.Target = targetArray[i]
+		newTargetConfig.IgnoreFailure = true
+
+		// FIXME: Add section that looks for rm or some equivalent
+		newTargetConfig.FilesDeleted = ""
+
+		// Check if it is a .PHONY, if it is not, it should correspond to a file
+		isPhony := false
+		for j := 0; j < len(phonyArray); j++ {
+			if phonyArray[j] == targetArray[i] {
+				isPhony = true
+			}
+		}
+		if !isPhony {
+			newTargetConfig.FilesCreated = targetArray[i]
+		} else {
+			newTargetConfig.FilesCreated = ""
+		}
+
+		// Add the new target to the array
+		finalTargetArray = append(finalTargetArray, newTargetConfig)
+	}
+	fmt.Println(targetArray)
+	fmt.Println(phonyArray)
+	return finalTargetArray
+}
+
+func parseMakefileRm(makefile string) []string {
+	// Setup arrays to catch targets & phonys in
+	rmArray := []string{}
+
+	// Parse the Makefile Section
+	// Open the Makefile
+	file, err := os.Open(makefile)
+	if err != nil {
+		fmt.Println("Opening Makefile Error: ", err)
+		return nil
+	}
+
+	// Make sure to close the file when done
+	defer file.Close()
+
+	// Create regexes
+	regexTargetPattern := regexp.MustCompile(`^\s*([^\s#]+)\s*:`)
+	regexRmPattern := regexp.MustCompile(`^(@?\s*rm\s+)`)
+
+	// Create scanner to read Makefile line by line
+	scanner := bufio.NewScanner(file)
+
+	// Create variable for the target that is being parsed
+	var target string
+
+	// Scan the Makefile
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		//Find target we are working with
+		targetMatch := regexTargetPattern.FindStringSubmatch(line)
+		if len(targetMatch) > 0 {
+			target = targetMatch[1]
+		}
+
+		// Does it match the rm regex
+		matches := regexRmPattern.FindStringSubmatch(line)
+		if len(matches) > 0 {
+			rmArray = append(rmArray, target)
+		}
+	}
+
+	return rmArray
 }

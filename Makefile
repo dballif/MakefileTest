@@ -7,3 +7,5 @@ target1Clean:
 
 failTarget:
 	@echo "FAIL"
+
+.PHONY: failTarget target1Clean

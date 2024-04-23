@@ -24,7 +24,9 @@ Originally a Bash Script that would just run all the targets in a Makefile to se
 ## Automatic JSON Generation (-g)
 This feature is still  undergoing testing.  
 
-The program will parse the Makefile specified by "-m" and attempt to create a JSON file as a starting basis for a test file. It will create a test for each target within the Makefile with the following features:
+The program will parse the Makefile and attempt to create a JSON file as a starting basis for a test file. It will create a test for each target within the Makefile with the following features:
+- If a Makefile path is specified with the "-m" flag, that Makefile will be parsed (otherwise it will default to parsing ./Makefile)
+- If a JSON file path is specified with the "-f" flag, the generated JSON file will use that path (otherwise it will default to test.json)
 - Name will just be "<Target> Test"
 - If the test has a phony, the fileCreated test will be left empty
 - If "rm" or some version of that is found, it will try to add a deleted file
