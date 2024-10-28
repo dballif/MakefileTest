@@ -1,0 +1,22 @@
+name: Pre-Push Verification
+
+on:
+  push:
+
+jobs:
+  pre_push_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run Checks
+        run: |
+          # Run the same checks as in the pre-push hook
+          ./run-some-checks.sh
+
+    # Optionally, configure it to notify or reject based on results
+      - name: Fail Action if Checks Fail
+        if: failure()
+        run: |
+          echo "Push failed validation checks."
